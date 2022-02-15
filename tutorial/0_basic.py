@@ -13,6 +13,8 @@ from datasets import load_dataset
 raw_dataset = load_dataset('super_glue', 'cb', cache_dir="../datasets/.cache/huggingface_datasets")
 raw_dataset['train'][0]
 
+
+
 # # Basic Usage: Custom dataset to do classification on various prompt. 
 # ## Construct InputExample from the dataset format
 # The format of InputeExample must match the datafield of template. 
@@ -28,6 +30,9 @@ for split in ['train', 'validation', 'test']:
         input_example = InputExample(text_a = data['premise'], text_b = data['hypothesis'], label=int(data['label']), guid=data['idx'])
         dataset[split].append(input_example)
 print(dataset['train'][0])
+
+
+
 
 # You can load the plm related things provided by openprompt simply by calling:
 from openprompt.plms import load_plm
@@ -153,4 +158,3 @@ for step, inputs in enumerate(validation_dataloader):
 
 acc = sum([int(i==j) for i,j in zip(allpreds, alllabels)])/len(allpreds)
 print(acc)
-

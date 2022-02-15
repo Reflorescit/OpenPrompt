@@ -12,16 +12,16 @@ import torch
 parser = argparse.ArgumentParser("")
 parser.add_argument("--lr", type=float, default=5e-5)
 parser.add_argument("--plm_eval_mode", action="store_true")
-parser.add_argument("--model", type=str, default='t5')  # tested model are gpt2/t5
-parser.add_argument("--model_name_or_path", default='t5-base')
+parser.add_argument("--model", type=str, default='gpt2')  # tested model are gpt2/t5
+parser.add_argument("--model_name_or_path", default='gpt2')
 args = parser.parse_args()
 print(args)
 
 from openprompt.data_utils.conditional_generation_dataset import WebNLGProcessor
 dataset = {}
-dataset['train'] = WebNLGProcessor().get_train_examples("./datasets/CondGen/webnlg_2017/")
-dataset['validation'] = WebNLGProcessor().get_dev_examples("./datasets/CondGen/webnlg_2017/")
-dataset['test'] = WebNLGProcessor().get_test_examples("./datasets/CondGen/webnlg_2017/")
+dataset['train'] = WebNLGProcessor().get_train_examples("../datasets/CondGen/webnlg_2017/")
+dataset['validation'] = WebNLGProcessor().get_dev_examples("../datasets/CondGen/webnlg_2017/")
+dataset['test'] = WebNLGProcessor().get_test_examples("../datasets/CondGen/webnlg_2017/")
 
 
 # load a pretrained model, its tokenizer, its config, and its TokenzerWrapper by one function 
@@ -66,6 +66,7 @@ test_dataloader = PromptDataLoader(dataset=dataset["test"], template=mytemplate,
 from openprompt import PromptForGeneration
 use_cuda = True
 prompt_model = PromptForGeneration(plm=plm,template=mytemplate, freeze_plm=True,tokenizer=tokenizer, plm_eval_mode=args.plm_eval_mode)
+
 if use_cuda:
     prompt_model=  prompt_model.cuda()
 
@@ -132,7 +133,7 @@ generation_arguments = {
 global_step = 0 
 tot_loss = 0 
 log_loss = 0
-for epoch in range(5):
+for epoch in range(1):
     prompt_model.train()
     for step, inputs in enumerate(train_dataloader):
         global_step +=1
@@ -148,6 +149,8 @@ for epoch in range(5):
         if global_step %500 ==0: 
             print("Epoch {}, global_step {} average loss: {} lr: {}".format(epoch, global_step, (tot_loss-log_loss)/500, scheduler.get_last_lr()[0]), flush=True)
             log_loss = tot_loss
+
+prompt_model.plm.save_pretrained('./models')
 
 generated_sentence = evaluate(prompt_model, test_dataloader)
 

@@ -33,7 +33,7 @@ class LMTokenizerWrapper(TokenizerWrapper):
         return self._num_specials
 
 
-    def tokenize_one_example(self, wrapped_example, teacher_forcing):
+    def tokenize_one_example(self, wrapped_example, teacher_forcing, padding=True):
         ''' # TODO doens't consider the situation that input has two parts
         '''
         wrapped_example, others = wrapped_example
@@ -43,6 +43,8 @@ class LMTokenizerWrapper(TokenizerWrapper):
             tgt_text = others['tgt_text']
             if isinstance(tgt_text, str):
                 tgt_text = [tgt_text]
+            # else:
+            #     print("tgt_text: ", tgt_text)
             
         if self.predict_eos:
             if not wrapped_example[-1]['text'].endswith(self.tokenizer.eos_token):
@@ -95,13 +97,14 @@ class LMTokenizerWrapper(TokenizerWrapper):
         encoder_inputs['attention_mask'] = [1] * len(encoder_inputs['input_ids'])
         if self.create_token_type_ids:
             encoder_inputs['token_type_ids'] = [0] * len(encoder_inputs['input_ids'])
-        # pad to max length
         input_ids_len = len(encoder_inputs['input_ids'])
-        encoder_inputs = self.padding(
-            input_dict = encoder_inputs,
-            max_len = self.max_seq_length,
-            pad_id_for_inputs = self.tokenizer.pad_token_id
-        )
+        if padding:
+            # pad to max length
+            encoder_inputs = self.padding(
+                input_dict = encoder_inputs,
+                max_len = self.max_seq_length,
+                pad_id_for_inputs = self.tokenizer.pad_token_id
+            )
         encoder_inputs = {**encoder_inputs, "input_ids_len": input_ids_len}
         return encoder_inputs
     

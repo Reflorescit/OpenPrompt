@@ -282,7 +282,6 @@ class InputFeatures(dict):
             :obj:`InputFeatures`: Return the :py:class:`~openprompt.data_utils.data_utils.InputFeatures of the current batch of data.
         '''
 
-        
         elem = batch[0]
         return_dict = {}
         for key in elem:

@@ -52,6 +52,7 @@ class PromptDataLoader(object):
                  decoder_max_length: Optional[int] = -1,
                  predict_eos_token: Optional[bool] = False,
                  truncate_method: Optional[str] = "tail",
+                 padding: Optional[bool] = True,
                  **kwargs,
                 ):
 
@@ -65,6 +66,8 @@ class PromptDataLoader(object):
         self.batch_size = batch_size
         self.shuffle = shuffle
         self.teacher_forcing = teacher_forcing
+
+        self.padding = padding
 
         tokenizer_wrapper_init_keys = signature(tokenizer_wrapper_class.__init__).args
         prepare_kwargs = {
@@ -107,7 +110,7 @@ class PromptDataLoader(object):
         if isinstance(self.raw_dataset, Dataset) or isinstance(self.raw_dataset, List): # TODO change to iterable 
             assert len(self.raw_dataset) > 0, 'The dataset to be wrapped is empty.'
             # for idx, example in tqdm(enumerate(self.raw_dataset),desc='Wrapping'):
-            for idx, example in enumerate(self.raw_dataset):
+            for idx, example in tqdm(enumerate(self.raw_dataset), desc='wrapping', total=len(self.raw_dataset)):
                 wrapped_example = self.template.wrap_one_example(example)
                 self.wrapped_dataset.append(wrapped_example)
         else:
@@ -117,9 +120,9 @@ class PromptDataLoader(object):
         r"""Pass the wraped text into a prompt-specialized tokenizer, 
            the true PretrainedTokenizer inside the tokenizer is flexible, e.g. AlBert, Bert, T5,...
         """
-        for idx, wrapped_example in tqdm(enumerate(self.wrapped_dataset),desc='tokenizing'):
+        for idx, wrapped_example in tqdm(enumerate(self.wrapped_dataset),desc='tokenizing', total=len(self.wrapped_dataset)):
         # for idx, wrapped_example in enumerate(self.wrapped_dataset):
-            inputfeatures = InputFeatures(**self.tokenizer_wrapper.tokenize_one_example(wrapped_example, self.teacher_forcing), **wrapped_example[1]).to_tensor()
+            inputfeatures = InputFeatures(**self.tokenizer_wrapper.tokenize_one_example(wrapped_example, self.teacher_forcing, padding=self.padding), **wrapped_example[1]).to_tensor()
             self.tensor_dataset.append(inputfeatures)
         
     def __len__(self):
@@ -428,6 +431,7 @@ class PromptForGeneration(nn.Module, GenerationMixin):
         logits = outputs.logits
         logits, labels = self.shift_logits_and_labels(logits, batch['loss_ids'], reference_ids)
         batch_size, seq_len, vocab_size = logits.shape
+
         loss = self.loss_fct(logits.view(-1, logits.size(-1)), labels.view(-1))
         loss = loss.view(batch_size, -1).sum(dim=-1) #TODO support more objectives
         loss = loss.mean()
@@ -497,9 +501,13 @@ class PromptForGeneration(nn.Module, GenerationMixin):
             Returns:
                 :obj:`List`: The generated sentences that have been post-processed.
         """
+        # import pdb
+        # pdb.set_trace()
         generated_sentences = []
         if type(input_lengths)==int:
             input_lengths = [input_lengths] * len(output_sequences)
+        elif len(input_lengths) < len(output_sequences):
+            input_lengths = [input_lengths[0]] * len(output_sequences)
         for sent_id, seq in enumerate(output_sequences):
             seq = seq[input_lengths[sent_id]:]
             text_output = self.tokenizer.decode(seq, clean_up_tokenization_spaces=True)
@@ -508,7 +516,7 @@ class PromptForGeneration(nn.Module, GenerationMixin):
                 text_output = text_output[:idx]
             text_output = text_output.strip()
             generated_sentences.append(text_output)
-        print(generated_sentences)
+        # print(generated_sentences)
         return generated_sentences
 
 

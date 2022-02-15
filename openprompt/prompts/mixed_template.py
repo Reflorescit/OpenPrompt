@@ -13,6 +13,8 @@ from openprompt import Template
 import torch
 from torch import nn
 
+import pdb
+
 class MixedTemplate(Template):
     """Mixed of manual token, trainable token and trainable that initialized with given hard token
 
@@ -189,7 +191,7 @@ class MixedTemplate(Template):
             elif 'meta' in d:
                 text[i] = d["add_prefix_space"] + d.get("post_processing", lambda x:x)(example.meta[d['meta']])
             elif 'soft' in d:
-                text[i] = ''; # unused
+                text[i] = '<soft token>'
             elif 'mask' in d:
                 text[i] = '<mask>'
             elif 'special' in d:

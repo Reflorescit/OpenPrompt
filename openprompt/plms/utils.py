@@ -11,6 +11,8 @@ from collections import defaultdict
 from openprompt.utils import round_list
 import numpy as np
 
+
+
 # 传入tokenizer，对数据进行截断处理
 
 class TokenizerWrapper:
@@ -153,6 +155,8 @@ class TokenizerWrapper:
 
     def add_special_tokens(self, encoder_inputs):
             # add special tokens
+        # import pdb
+        # pdb.set_trace()
         for key in encoder_inputs:
             if key == "input_ids": 
                 with warnings.catch_warnings():
@@ -161,7 +165,11 @@ class TokenizerWrapper:
                                                         encoder_inputs[key])
             else:
                 special_tokens_mask = np.array(self.tokenizer.get_special_tokens_mask(encoder_inputs[key]))
-                with_special_tokens = np.array(self.tokenizer.build_inputs_with_special_tokens(encoder_inputs[key]))  
+                with_special_tokens = np.array(self.tokenizer.build_inputs_with_special_tokens(encoder_inputs[key]))
+                # # bug fix
+                # if len(with_special_tokens) != len(encoder_inputs['input_ids']):
+                #     with_special_tokens = np.append(special_tokens_mask, 1)
+                     
                 if key in ["soft_token_ids"]: # TODO maybe more than this
                     encoder_inputs[key] =  ((1-special_tokens_mask) * with_special_tokens).tolist() # use 0 as special
                 else:
